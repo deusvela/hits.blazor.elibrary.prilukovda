@@ -1,0 +1,71 @@
+﻿@page "/readers"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>Читатели</h3>
+
+@if (readers == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!readers.Any())
+{
+    <button class="btn btn-primary mb-3" @onclick="AddReader">Добавить читателя</button>
+    <p>Читатели не найдены.</p>
+}
+else
+{
+    <button class="btn btn-primary mb-3" @onclick="AddReader">Добавить читателя</button>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ФИО</th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reader in readers)
+            {
+                <tr>
+                    <td>@reader.FullName</td>
+                    <td>@reader.PhoneNumber</td>
+                    <td>@reader.Email</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="@(() => EditReader(reader.Id))">Изменить</button>
+                        <button class="btn btn-sm btn-danger ms-2" @onclick="@(() => DeleteReader(reader.Id))">Удалить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Reader>? readers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        readers = await DataService.GetAllReadersAsync();
+    }
+
+    private void AddReader()
+    {
+        NavManager.NavigateTo("/readers/add");
+    }
+
+    private void EditReader(int id)
+    {
+        NavManager.NavigateTo($"/readers/edit/{id}");
+    }
+
+    private async Task DeleteReader(int id)
+    {
+        await DataService.DeleteReaderAsync(id);
+        readers = await DataService.GetAllReadersAsync();
+    }
+}

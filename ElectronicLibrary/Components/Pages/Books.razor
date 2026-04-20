@@ -1,0 +1,79 @@
+﻿@page "/books"
+
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+
+<h3>Книги</h3>
+
+@if (books == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!books.Any())
+{
+    <button class="btn btn-primary mb-3" @onclick="AddBook">Добавить книгу</button>
+    <p>Книги не найдены.</p>
+}
+else
+{
+    <button class="btn btn-primary mb-3" @onclick="AddBook">Добавить книгу</button>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Автор</th>
+                <th>Жанр</th>
+                <th>Год</th>
+                <th>Всего</th>
+                <th>Доступно</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in books)
+            {
+                <tr>
+                    <td>@book.Title</td>
+                    <td>@book.Author</td>
+                    <td>@book.Genre</td>
+                    <td>@book.PublicationDate.ToString("dd.MM.yyyy")</td>
+                    <td>@book.TotalCopies</td>
+                    <td>@book.AvailableCopies</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="@(() => EditBook(book.Id))">Изменить</button>
+                        <button class="btn btn-sm btn-danger ms-2" @onclick="@(() => DeleteBook(book.Id))">Удалить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Book>? books;
+
+    protected override async Task OnInitializedAsync()
+    {
+        books = await DataService.GetAllBooksAsync();
+    }
+
+    private void AddBook()
+    {
+        NavManager.NavigateTo("/books/add");
+    }
+
+    private void EditBook(int id)
+    {
+        NavManager.NavigateTo($"/books/edit/{id}");
+    }
+
+    private async Task DeleteBook(int id)
+    {
+        await DataService.DeleteBookAsync(id);
+        books = await DataService.GetAllBooksAsync();
+    }
+}

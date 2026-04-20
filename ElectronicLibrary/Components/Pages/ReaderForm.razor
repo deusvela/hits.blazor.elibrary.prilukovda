@@ -1,0 +1,58 @@
+﻿@page "/readers/add"
+@page "/readers/edit/{ReaderId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>@(IsEditMode ? "Редактировать читателя" : "Добавить читателя")</h3>
+
+<EditForm Model="@reader" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>ФИО:</label>
+        <InputText class="form-control" @bind-Value="reader.FullName" />
+        <ValidationMessage For="() => reader.FullName" />
+    </div>
+
+    <div class="mb-3">
+        <label>Телефон:</label>
+        <InputText class="form-control" @bind-Value="reader.PhoneNumber" />
+        <ValidationMessage For="() => reader.PhoneNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label>Email:</label>
+        <InputText class="form-control" @bind-Value="reader.Email" />
+        <ValidationMessage For="() => reader.Email" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button type="button" class="btn btn-secondary ms-2" @onclick='() => NavManager.NavigateTo("/readers")'>
+        Отмена
+    </button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? ReaderId { get; set; }
+
+    private Reader reader = new();
+    private bool IsEditMode => ReaderId.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode && ReaderId != null)
+        {
+            reader = await DataService.GetReaderByIdAsync(ReaderId.Value) ?? new Reader();
+        }
+    }
+
+    private async Task Save()
+    {
+        await DataService.AddOrUpdateReaderAsync(reader);
+        NavManager.NavigateTo("/readers");
+    }
+}

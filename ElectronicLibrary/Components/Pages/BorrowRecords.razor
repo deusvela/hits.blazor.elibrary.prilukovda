@@ -1,0 +1,87 @@
+﻿@page "/borrow-records"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>Выдача книг</h3>
+
+<button class="btn btn-primary mb-3" @onclick="AddBorrowRecord">Выдать книгу</button>
+
+@if (records == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!records.Any())
+{
+    <p>Записи о выдаче не найдены.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Книга</th>
+                <th>Читатель</th>
+                <th>Дата выдачи</th>
+                <th>Срок возврата</th>
+                <th>Дата возврата</th>
+                <th>Статус</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in records)
+            {
+                <tr>
+                    <td>@record.Book?.Title</td>
+                    <td>@record.Reader?.FullName</td>
+                    <td>@record.BorrowDate.ToString("dd.MM.yyyy")</td>
+                    <td>@record.DueDate.ToString("dd.MM.yyyy")</td>
+                    <td>@(record.ReturnDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                    <td>@(record.IsReturned ? "Возвращена" : "На руках")</td>
+                    <td>
+                        @if (!record.IsReturned)
+                        {
+                            <button class="btn btn-sm btn-success"
+                                    @onclick="@(() => ReturnBook(record.Id))">
+                                Вернуть
+                            </button>
+                        }
+
+                        <button class="btn btn-sm btn-danger ms-2"
+                                @onclick="@(() => DeleteRecord(record.Id))">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<BorrowRecord>? records;
+
+    protected override async Task OnInitializedAsync()
+    {
+        records = await DataService.GetAllBorrowRecordsAsync();
+    }
+
+    private void AddBorrowRecord()
+    {
+        NavManager.NavigateTo("/borrow-records/add");
+    }
+
+    private async Task ReturnBook(int id)
+    {
+        await DataService.ReturnBookAsync(id);
+        records = await DataService.GetAllBorrowRecordsAsync();
+    }
+
+    private async Task DeleteRecord(int id)
+    {
+        await DataService.DeleteBorrowRecordAsync(id);
+        records = await DataService.GetAllBorrowRecordsAsync();
+    }
+}

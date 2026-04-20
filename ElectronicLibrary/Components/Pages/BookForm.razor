@@ -1,0 +1,77 @@
+﻿@page "/books/add"
+@page "/books/edit/{BookId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>@(IsEditMode ? "Редактировать книгу" : "Добавить книгу")</h3>
+
+<EditForm Model="@book" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Название:</label>
+        <InputText class="form-control" @bind-Value="book.Title" />
+        <ValidationMessage For="() => book.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label>Автор:</label>
+        <InputText class="form-control" @bind-Value="book.Author" />
+        <ValidationMessage For="() => book.Author" />
+    </div>
+
+    <div class="mb-3">
+        <label>Жанр:</label>
+        <InputText class="form-control" @bind-Value="book.Genre" />
+        <ValidationMessage For="() => book.Genre" />
+    </div>
+
+    <div class="mb-3">
+        <label>Дата издания:</label>
+        <InputDate class="form-control" @bind-Value="book.PublicationDate" />
+        <ValidationMessage For="() => book.PublicationDate" />
+    </div>
+
+    <div class="mb-3">
+        <label>Количество экземпляров:</label>
+        <InputNumber class="form-control" @bind-Value="book.TotalCopies" />
+        <ValidationMessage For="() => book.TotalCopies" />
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button type="button" class="btn btn-secondary ms-2" @onclick='() => NavManager.NavigateTo("/books")'>
+        Отмена
+    </button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? BookId { get; set; }
+
+    private Book book = new()
+    {
+        PublicationDate = DateTime.Today
+    };
+    private bool IsEditMode => BookId.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode && BookId != null)
+        {
+            book = await DataService.GetBookByIdAsync(BookId.Value) ?? new Book
+            {
+                PublicationDate = DateTime.Today
+            };
+        }
+    }
+
+    private async Task Save()
+    {
+        await DataService.AddOrUpdateBookAsync(book);
+        NavManager.NavigateTo("/books");
+    }
+}

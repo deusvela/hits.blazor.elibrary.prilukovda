@@ -1,0 +1,91 @@
+﻿@page "/borrow-records/add"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject IDataService DataService
+@inject NavigationManager NavManager
+
+<h3>Выдать книгу</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm Model="@borowRecord" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Книга:</label>
+        <InputSelect class="form-control" @bind-Value="borowRecord.BookId">
+            <option value="0">-- выберите книгу --</option>
+            @foreach (var book in books)
+            {
+                <option value="@book.Id">@book.Title (@book.AvailableCopies доступно)</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => borowRecord.BookId" />
+    </div>
+
+    <div class="mb-3">
+        <label>Читатель:</label>
+        <InputSelect class="form-control" @bind-Value="borowRecord.ReaderId">
+            <option value="0">-- выберите читателя --</option>
+            @foreach (var reader in readers)
+            {
+                <option value="@reader.Id">@reader.FullName</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => borowRecord.ReaderId" />
+    </div>
+
+    <div class="mb-3">
+        <label>Срок возврата:</label>
+        <InputDate class="form-control" @bind-Value="borowRecord.DueDate" />
+        <ValidationMessage For="() => borowRecord.DueDate" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button type="button" class="btn btn-secondary ms-2"
+            @onclick='() => NavManager.NavigateTo("/borrow-records")'>
+        Отмена
+    </button>
+</EditForm>
+
+@code {
+    private BorrowRecord borowRecord = new()
+    {
+        DueDate = DateTime.Today.AddDays(14)
+    };
+
+    private List<Book> books = new();
+    private List<Reader> readers = new();
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        books = await DataService.GetAllBooksAsync();
+        readers = await DataService.GetAllReadersAsync();
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            errorMessage = "";
+
+            if (borowRecord.BookId == 0 || borowRecord.ReaderId == 0)
+            {
+                errorMessage = "Выберите книгу и читателя.";
+                return;
+            }
+
+            await DataService.BorrowBookAsync(borowRecord);
+            NavManager.NavigateTo("/borrow-records");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}
