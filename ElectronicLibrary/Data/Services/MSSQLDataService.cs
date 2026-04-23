@@ -24,7 +24,7 @@ namespace ElectronicLibrary.Data.Services
 
         public async Task<Book?> GetBookByIdAsync(int id)
         {
-            return await _db.Books.FindAsync(id);
+            return await _db.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
         }
 
         public async Task AddOrUpdateBookAsync(Book book)
@@ -77,15 +77,25 @@ namespace ElectronicLibrary.Data.Services
 
         public async Task<Reader?> GetReaderByIdAsync(int id)
         {
-            return await _db.Readers.FindAsync(id);
+            return await _db.Readers.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task AddOrUpdateReaderAsync(Reader reader)
         {
             if (reader.Id == 0)
+            {
                 _db.Readers.Add(reader);
+            }
             else
-                _db.Readers.Update(reader);
+            {
+                var existingReader = await _db.Readers.FindAsync(reader.Id);
+                if (existingReader == null)
+                    throw new ArgumentException("Читатель не найден");
+
+                existingReader.FullName = reader.FullName;
+                existingReader.PhoneNumber = reader.PhoneNumber;
+                existingReader.Email = reader.Email;
+            }
 
             await _db.SaveChangesAsync();
         }

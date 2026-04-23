@@ -7,6 +7,11 @@
 
 <h3>@(IsEditMode ? "Редактировать читателя" : "Добавить читателя")</h3>
 
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
 <EditForm Model="@reader" OnValidSubmit="Save">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -40,19 +45,38 @@
     public int? ReaderId { get; set; }
 
     private Reader reader = new();
+    private string errorMessage = string.Empty;
+
     private bool IsEditMode => ReaderId.HasValue;
 
     protected override async Task OnInitializedAsync()
     {
-        if (IsEditMode && ReaderId != null)
+        try
         {
-            reader = await DataService.GetReaderByIdAsync(ReaderId.Value) ?? new Reader();
+            errorMessage = string.Empty;
+
+            if (IsEditMode && ReaderId != null)
+            {
+                reader = await DataService.GetReaderByIdAsync(ReaderId.Value) ?? new Reader();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
         }
     }
 
     private async Task Save()
     {
-        await DataService.AddOrUpdateReaderAsync(reader);
-        NavManager.NavigateTo("/readers");
+        try
+        {
+            errorMessage = string.Empty;
+            await DataService.AddOrUpdateReaderAsync(reader);
+            NavManager.NavigateTo("/readers");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
     }
 }

@@ -7,6 +7,11 @@
 
 <h3>@(IsEditMode ? "Редактировать книгу" : "Добавить книгу")</h3>
 
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
 <EditForm Model="@book" OnValidSubmit="Save">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -39,7 +44,6 @@
         <label>Количество экземпляров:</label>
         <InputNumber class="form-control" @bind-Value="book.TotalCopies" />
         <ValidationMessage For="() => book.TotalCopies" />
-
     </div>
 
     <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -56,22 +60,42 @@
     {
         PublicationDate = DateTime.Today
     };
+
+    private string errorMessage = string.Empty;
+
     private bool IsEditMode => BookId.HasValue;
 
     protected override async Task OnInitializedAsync()
     {
-        if (IsEditMode && BookId != null)
+        try
         {
-            book = await DataService.GetBookByIdAsync(BookId.Value) ?? new Book
+            errorMessage = string.Empty;
+
+            if (IsEditMode && BookId != null)
             {
-                PublicationDate = DateTime.Today
-            };
+                book = await DataService.GetBookByIdAsync(BookId.Value) ?? new Book
+                {
+                    PublicationDate = DateTime.Today
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
         }
     }
 
     private async Task Save()
     {
-        await DataService.AddOrUpdateBookAsync(book);
-        NavManager.NavigateTo("/books");
+        try
+        {
+            errorMessage = string.Empty;
+            await DataService.AddOrUpdateBookAsync(book);
+            NavManager.NavigateTo("/books");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
     }
 }
